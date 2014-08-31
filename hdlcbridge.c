@@ -148,6 +148,26 @@ int serverOpen()
   return lsn;
 }
 
+void sendDebug(int fd, char* msg)
+{
+  PPPContext ctx;
+  uint8_t pkt[1024];
+  int  i;
+  int  len;
+
+  ctx.buf = pkt;
+  pppOutputBegin(&ctx, PPP_DEBUG);
+  
+  len = strlen(msg);
+  for (i = 0; i < len; i++)
+    pppOutputAppend(&ctx, *msg++);
+
+  pppOutputEnd(&ctx);
+
+  len = ctx.ptr - ctx.buf;
+  write(fd, ctx.buf, len);
+}
+
 int clientConnect(char* host)
 {
   struct addrinfo hints;
@@ -190,6 +210,14 @@ int clientConnect(char* host)
 
   freeaddrinfo(resOrig);
  
+  if (cli != -1) {
+
+    char buf[1024];
+
+    sprintf(buf, "hdlcbridge client here.\n");
+    sendDebug(cli, buf);
+  }
+
   return cli;
 }
 
@@ -208,6 +236,12 @@ int clientAccept(int lsn)
   }
 
   printf("New cli#%d\n", s);
+
+  char buf[1024];
+
+  sprintf(buf, "hdlcbridge server accepted you.\n");
+  sendDebug(s, buf);
+
   return s;
 }
 
@@ -243,9 +277,17 @@ int clientRead(int client, int tap)
 
 void tapWrite(int proto, uint8_t* data, int len)
 {
-  printf("%d to tap\n", len);
-  if (write(globalTapXXX, data, len) != len)
-    perror("tap write");
+  if (proto == PPP_ETHERNET) {
+
+    printf("%d to tap\n", len);
+    if (write(globalTapXXX, data, len) != len)
+      perror("tap write");
+  }
+  else if (proto == PPP_DEBUG) {
+
+    data[len] = '\0';
+    printf ("%s", data);
+  }
 }
 
 int tapRead(int tap, int client)
@@ -270,7 +312,7 @@ int tapRead(int tap, int client)
   PPPContext ctx;
 
   ctx.buf = buf2;
-  pppOutputBegin(&ctx, PPP_IP);
+  pppOutputBegin(&ctx, PPP_ETHERNET);
   for (i = 0; i < len; i++)
     pppOutputAppend(&ctx, buf[i]);
 

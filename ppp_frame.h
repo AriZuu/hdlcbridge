@@ -46,6 +46,9 @@ struct pppContext {
   } stat;
 };
 
+#define PPP_ETHERNET	0x81
+#define PPP_DEBUG	0x83
+
 typedef struct pppContext PPPContext;
 
 void pppOutputBegin(PPPContext* state, uint16_t protocol);
