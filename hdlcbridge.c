@@ -235,7 +235,6 @@ int clientAccept(int lsn)
     return -1;
   }
 
-  printf("New cli#%d\n", s);
 
   char buf[1024];
 
@@ -264,7 +263,6 @@ int clientRead(int client, int tap)
     return -1;
   }
 
-  printf ("%d bytes from client\n", len);
   if (len == 0)
     return -1;
 
@@ -279,7 +277,6 @@ void tapWrite(int proto, uint8_t* data, int len)
 {
   if (proto == PPP_ETHERNET) {
 
-    printf("%d to tap\n", len);
     if (write(globalTapXXX, data, len) != len)
       perror("tap write");
   }
@@ -302,7 +299,6 @@ int tapRead(int tap, int client)
     return -1;
   }
 
-  printf("%d from tap client is %d\n", len, client);
   if (len == 0)
     return -1;
 
@@ -321,7 +317,6 @@ int tapRead(int tap, int client)
   if (client != -1) {
 
     int l = ctx.ptr - ctx.buf;
-    printf("%d to client\n", l);
     write(client, ctx.buf, l);
   }
 

@@ -70,7 +70,6 @@
  *
  */
 
-#include <stdio.h>
 #include <string.h>
 #include <stdint.h>
 
@@ -216,13 +215,11 @@ void pppInputAppend(PPPContext* ctx, uint8_t ch)
   if (ch == PPP_FLAG) {
 
     len = ctx->ptr - ctx->buf;
-    printf("input start len now %d\n", len);
     if (len < 2) {
 
       // Too short or no packet at all, restart.
       if (len > 0) {
 
-        fprintf(stderr, "ppp: packet too short.\n");
         ctx->stat.tooShort++;
       }
 
@@ -232,7 +229,6 @@ void pppInputAppend(PPPContext* ctx, uint8_t ch)
 
     if (ctx->fcs != PPP_GOODFCS) {
       
-      fprintf(stderr, "ppp: bad CRC.\n");
       ctx->stat.badCRC++;
       pppInputReset(ctx);
       return;
@@ -281,7 +277,6 @@ void pppInputAppend(PPPContext* ctx, uint8_t ch)
       }
     }
           
-    printf ("Packet ready, %d bytes, proto %d\n", len, protocol);
     ctx->inputHook(protocol, packet, len);
 
     pppInputReset(ctx);
