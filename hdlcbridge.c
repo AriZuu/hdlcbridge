@@ -156,7 +156,7 @@ int serverOpen(bool ipv6)
 
   if (ipv6) {
 
-    flag = 1;
+    flag = 0;
     if (setsockopt(lsn, IPPROTO_IPV6, IPV6_V6ONLY, &flag, sizeof(int)) == -1) {
 
       perror("IPV6_V6ONLY");
