@@ -42,6 +42,12 @@
 #include <netinet/in.h>
 #include <netdb.h>
 
+#ifdef linux
+#include <sys/ioctl.h>
+#include <linux/if.h>
+#include <linux/if_tun.h>
+#endif
+
 #include <termios.h>
 
 #include "ppp_defs.h"
@@ -65,18 +71,23 @@ int tapOpen(char* ip)
 
   memset(&ifr, '\0', sizeof(ifr));
   ifr.ifr_flags = IFF_TAP | IFF_NO_PI;
-  strcpy(ifr, ifr_name, "tap0");
+  strcpy(ifr.ifr_name, "tap0");
 
-  if (ioctl(tun, TUNSETIFF, &ifr) == -1) {
+  if (ioctl(tap, TUNSETIFF, &ifr) == -1) {
 
     perror("ioctl TUNSETIFF");
-    close(tun);
+    close(tap);
     return -1;
   }
 
-  printf("TAP is %s\n", ifr_ifr_name);
-  sprintf(buf, "ifconfig tap0 inet %s up", ip);
-  system(buf);
+  printf("TAP is %s\n", ifr.ifr_name);
+  if (ip) {
+
+    sprintf(buf, "ifconfig tap0 inet %s up", ip);
+    system(buf);
+  }
+  else
+    system("ifconfig tap0 up");
 
 #else
 
@@ -89,9 +100,13 @@ int tapOpen(char* ip)
 
   printf("TAP is %s\n", fdevname(tap));
 
-  sprintf(buf, "ifconfig tap0 inet %s", ip);
-  system(buf);
-  system("ifconfig tap0 inet6 -ifdisabled up");
+  if (ip) {
+
+    sprintf(buf, "ifconfig tap0 inet %s", ip);
+    system(buf);
+    system("ifconfig tap0 inet6 -ifdisabled up");
+  }
+    system("ifconfig tap0 up");
 
 #endif
 
@@ -100,19 +115,32 @@ int tapOpen(char* ip)
   return tap;
 }
 
-int serverOpen()
+int serverOpen(bool ipv6)
 {
   int lsn;
   int flag;
-
+  struct sockaddr_in me4;
   struct sockaddr_in6 me;
 
-  memset(&me, '\0', sizeof(me));
-  me.sin6_family = AF_INET6;
-  me.sin6_addr = in6addr_any;
-  me.sin6_port = htons(33333);
+  if (ipv6) {
 
-  lsn = socket(AF_INET6, SOCK_STREAM, 0);
+    memset(&me, '\0', sizeof(me));
+    me.sin6_family = AF_INET6;
+    me.sin6_addr = in6addr_any;
+    me.sin6_port = htons(33333);
+
+    lsn = socket(AF_INET6, SOCK_STREAM, 0);
+  }
+  else {
+  
+    memset(&me, '\0', sizeof(me));
+    me4.sin_family = AF_INET;
+    me4.sin_addr.s_addr = INADDR_ANY;
+    me4.sin_port = htons(33333);
+
+    lsn = socket(AF_INET, SOCK_STREAM, 0);
+  }
+
   if (lsn == -1) {
 
     perror("socket");
@@ -126,17 +154,28 @@ int serverOpen()
     return -1;
   }
 
-  flag = 1;
-  if (setsockopt(lsn, IPPROTO_IPV6, IPV6_V6ONLY, &flag, sizeof(int)) == -1) {
+  if (ipv6) {
 
-    perror("IPV6_V6ONLY");
-    return -1;
-  }
+    flag = 1;
+    if (setsockopt(lsn, IPPROTO_IPV6, IPV6_V6ONLY, &flag, sizeof(int)) == -1) {
 
-  if (bind(lsn, (struct sockaddr*)&me, sizeof(me)) == -1) {
+      perror("IPV6_V6ONLY");
+      return -1;
+    }
+
+    if (bind(lsn, (struct sockaddr*)&me, sizeof(me)) == -1) {
  
-    perror("bind");
-    return -1;
+      perror("bind");
+      return -1;
+    }
+  }
+  else {
+
+    if (bind(lsn, (struct sockaddr*)&me4, sizeof(me4)) == -1) {
+ 
+      perror("bind");
+      return -1;
+    }
   }
 
   if (listen(lsn, 5) == -1) {
@@ -354,6 +393,8 @@ static struct option longopts[] = {
   { "server",   no_argument,            NULL,           's' },
   { "client",   required_argument,      NULL,           'c' },
   { "serial",   required_argument,      NULL,           'p' },
+  { "ifconfig", required_argument,      NULL,           'i' },
+  { "ipv6",     no_argument,            NULL,           '6' },
   { NULL,       0,                      NULL,           0 }
 };
 
@@ -364,6 +405,8 @@ int main(int argc, char** argv)
   char* clientMode = NULL;
   char* serialMode = NULL;
   bool  serverMode = false;
+  bool  ipv6 = false;
+  char* ifconfig = NULL;
   
   while ((ch = getopt_long(argc, argv, "", longopts, NULL)) != -1) {
 
@@ -372,8 +415,16 @@ int main(int argc, char** argv)
       serverMode = true;
       break;
 
+    case '6':
+      ipv6 = true;
+      break;
+
     case 'p':
       serialMode = optarg;
+      break;
+
+    case 'i':
+      ifconfig = optarg;
       break;
 
     case 'c':
@@ -407,7 +458,7 @@ int main(int argc, char** argv)
 
   if (serverMode) {
 
-    server = serverOpen();
+    server = serverOpen(ipv6);
     if (server == -1)
       exit(1);
   }
@@ -426,7 +477,7 @@ int main(int argc, char** argv)
       exit(1);
   }
 
-  tap = tapOpen(serverMode ? "192.168.0.1/24" : "192.168.0.2/24");
+  tap = tapOpen(ifconfig);
   if (tap == -1)
     exit(1);
 
