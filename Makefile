@@ -30,7 +30,7 @@
 
 CFLAGS = -Wall -g
 hdlcbridge: hdlcbridge.o ppp_frame.o
-	cc -g -o hdlcbridge hdlcbridge.o ppp_frame.o
+	$(CC) -g -o hdlcbridge hdlcbridge.o ppp_frame.o
 
 clean:
 	rm -f *.o hdlcbridge *.core
