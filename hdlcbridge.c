@@ -53,6 +53,8 @@
 #include "ppp_defs.h"
 #include "ppp_frame.h"
 
+static bool  debug = false;
+
 int tapOpen(char* ip)
 {
   int tap;
@@ -302,6 +304,9 @@ int clientRead(int client, int tap)
     return -1;
   }
 
+  if (debug)
+    printf("client: read %d bytes.\n", len);
+
   if (len == 0)
     return -1;
 
@@ -316,13 +321,19 @@ void tapWrite(int proto, uint8_t* data, int len)
 {
   if (proto == PPP_ETHERNET) {
 
+    if (debug)
+      printf("tap: write %d byte packet.\n", len);
+
     if (write(globalTapXXX, data, len) != len)
       perror("tap write");
   }
   else if (proto == PPP_DEBUG) {
 
-    data[len] = '\0';
-    printf ("%s", data);
+    if (debug) {
+
+      data[len] = '\0';
+      printf ("%s", data);
+    }
   }
 }
 
@@ -337,6 +348,9 @@ int tapRead(int tap, int client)
     perror("tap read");
     return -1;
   }
+
+  if (debug)
+    printf("tap: read %d byte packet.\n", len);
 
   if (len == 0)
     return -1;
@@ -356,6 +370,9 @@ int tapRead(int tap, int client)
   if (client != -1) {
 
     int l = ctx.ptr - ctx.buf;
+    if (debug)
+      printf("client: write %d bytes.\n", l);
+
     write(client, ctx.buf, l);
   }
 
@@ -395,6 +412,7 @@ static struct option longopts[] = {
   { "serial",   required_argument,      NULL,           'p' },
   { "ifconfig", required_argument,      NULL,           'i' },
   { "ipv6",     no_argument,            NULL,           '6' },
+  { "debug",    no_argument,            NULL,           'd' },
   { NULL,       0,                      NULL,           0 }
 };
 
@@ -411,6 +429,10 @@ int main(int argc, char** argv)
   while ((ch = getopt_long(argc, argv, "", longopts, NULL)) != -1) {
 
     switch (ch) {
+    case 'd':
+      debug = true;
+      break;
+
     case 's':
       serverMode = true;
       break;
