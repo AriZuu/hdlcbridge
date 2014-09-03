@@ -1,0 +1,32 @@
+CONFIG_TARGET_ramips=y
+CONFIG_TARGET_ramips_rt305x=y
+CONFIG_TARGET_ramips_rt305x_HLKRM04=y
+#
+# Save space
+#
+CONFIG_PACKAGE_ppp=n
+CONFIG_PACKAGE_kmod-ip6tables=n
+CONFIG_PACKAGE_iptables=n
+#
+CONFIG_PACKAGE_kmod-tun=y
+CONFIG_PACKAGE_dnsmasq=m
+CONFIG_PACKAGE_odhcpd=m
+CONFIG_PACKAGE_ntpclient=m
+CONFIG_PACKAGE_snmpd-static=m
+CONFIG_PACKAGE_tcpdump=m
+#
+# More packages
+#
+CONFIG_PACKAGE_microcom=m
+#
+CONFIG_PACKAGE_firewall=n
+CONFIG_PACKAGE_ip6tables=n
+CONFIG_PACKAGE_iptables=n
+
+CONFIG_PACKAGE_kmod-ipt-nathelper=n
+CONFIG_IPV6=n
+CONFIG_PACKAGE_odhcp6c=n
+CONFIG_PACKAGE_kmod-ipv6=n
+CONFIG_PACKAGE_kmod-ledtrig-usbdev=n
+CONFIG_PACKAGE_kmod-usb-core=n
+CONFIG_PACKAGE_kmod-usb-rt305x-dwc_otg=n
